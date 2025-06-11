@@ -1,5 +1,5 @@
 # LiveTelemetry
-
+This is the code for Columbia Formula Racing Club's Live Telemetry Visualisation.
 ## To Run the Visual
 1. Plug the radio into your computer and identify the serial port number
 	1. You can use the XCTU software to find the port number
