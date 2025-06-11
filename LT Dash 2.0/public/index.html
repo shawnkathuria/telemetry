@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<div id="errorPopup" class="popup">
+    <p id="errorMessage">Error: Something went wrong!</p>
+    <button onclick="closePopup()">Close</button>
+</div>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Data</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <h1 style="text-align: center;">CUFR Live Telemetry</h1>
+    <!-- <div id="error-popup-container"></div> -->
+    <div class="content-container">
+        <div id="list">
+            <table border="1">
+                <tr>
+                    <th>Vehicle State</th>
+                    <td id="LV_Vehicle_State">Loading...</td>
+                </tr>
+                <tr>
+                    <th>Beacon</th>
+                    <td id="BeaconCount">Loading...</td>
+                </tr>
+            </table>
+            <table border="1">
+                <tr>
+                    <th>A Temp</th>
+                    <td id="BMS_T_A1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>B Temp</th>
+                    <td id="BMS_T_B1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>C Temp</th>
+                    <td id="BMS_T_C1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>D Temp</th>
+                    <td id="BMS_T_D1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>E Temp</th>
+                    <td id="BMS_T_E1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>F Temp</th>
+                    <td id="BMS_T_F1">Loading...</td>
+                </tr>
+            </table>
+            <table border="1">
+                <tr>
+                    <th>A Volt</th>
+                    <td id="BMS_V_A1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>B Volt</th>
+                    <td id="BMS_V_B1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>C Volt</th>
+                    <td id="BMS_V_C1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>D Volt</th>
+                    <td id="BMS_V_D1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>E Volt</th>
+                    <td id="BMS_V_E1">Loading...</td>
+                </tr>
+                <tr>
+                    <th>F Volt</th>
+                    <td id="BMS_V_F1">Loading...</td>
+                </tr>
+            </table>
+            <table border="1">
+                <tr>
+                    <th>FL Temp</th>
+                    <td id="SEN_TT_FL_8">Loading...</td>
+                </tr>
+                <tr>
+                    <th>FR Temp</th>
+                    <td id="SEN_TT_FR_8">Loading...</td>
+                </tr>
+                <tr>
+                    <th>RL Temp</th>
+                    <td id="SEN_TT_RL_8">Loading...</td>
+                </tr>
+                <tr>
+                    <th>RR Temp</th>
+                    <td id="SEN_TT_RR_8">Loading...</td>
+            </table>
+             <table border="1">
+                <tr>
+                    <th>Corrected Speed</th>
+                    <td id="LV_FILTERED_V">Loading...</td>
+                </tr>
+            </table>
+        </div>
+        <div id="charts"></div>
+    </div>
+</body>
+    <script src="dependencies/chart.js"></script>
+    <script src="dependencies/chartjs-adapter-date-fns.js"></script>
+</html>

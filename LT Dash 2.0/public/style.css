@@ -1,0 +1,152 @@
+* {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background-color: rgb(0,119,192);
+}
+
+h1 {
+    color: white;
+    height: 3vh;
+    border-radius: 10px;
+}
+
+.content-container {
+    display: flex;
+}
+
+
+#list {
+    background-color: rgb(117,170,219);
+    height: 90vh;
+    width: 20vw;
+    text-align: center;
+    border-radius: 10px;
+}
+
+#list table {
+    font-size: 10px;
+    background-color: rgb(240, 240, 240);
+    list-style-type: none;
+    padding: 2px;
+    width: 90%;
+    min-height: 10%;
+    text-align: left;
+    margin: 10px auto;
+}
+
+#list table tr *{
+    background-color: rgb(240, 240, 240);
+}
+
+#charts {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    height: 90vh;
+    background-color: white;
+    border-radius: 10px;
+    /* padding: 20px; */
+}
+
+#charts .graph-wrapper {
+    min-height: 40vh;
+    max-width: 30vw;
+    height: auto;
+    margin: 5px;
+    background-color: white;
+}
+
+#charts canvas {
+    display: block;
+    background-color: white;
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 2%;
+    left: 80%;
+    /* transform: translate(-50%, -50%); */
+    background: red;
+    color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+}
+.popup button {
+    background: white;
+    color: red;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.popup button *{
+    background: red;
+}
+
+/*pop-up stuffs*/
+/* 
+#error-popup-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.error-popup {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px 20px;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.error-popup.fade-out {
+    opacity: 0;
+}
+
+button#new-graph {
+    position: fixed;
+    background-color: rgb(74, 179, 253);
+    border-radius: 100%;
+    height: 100px;
+    width: 100px;
+    border: none;
+    right: 10px;
+    bottom: 10px;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+.new-graph-pop-up {
+    position: fixed;
+    top: 12.5%;
+    left: 12.5%;
+    width: 75%;
+    height: 75%;
+    text-align: center;
+    background-color: #9ba6c8;
+    overflow-y: scroll;
+    color: white;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.new-graph-pop-up.show {
+    visibility: visible;
+    opacity: 1;
+} */
