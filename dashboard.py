@@ -69,12 +69,12 @@ class Signal:
     def get_value(self):
         return self.value
     
-    def set_value(self, data, loop):
+    def set_value(self, data):
         #print("set")
         #value = int.from_bytes(data, "big")
         self.value = self.offset + self.scale*data
-        data_final = {"name":self.name,"value":self.value}
-        asyncio.run_coroutine_threadsafe(send_to_clients(json.dumps(data_final)), loop)
+        #data_final = {"name":self.name,"value":self.value}
+        #asyncio.run_coroutine_threadsafe(send_to_clients(json.dumps(data_final)), loop)
 
     
 pkts = []
@@ -141,6 +141,7 @@ def process_msg(pkt, msg, loop):
     #test by printing one of the message testing sending
     
     #print(msg)
+    packet_signals = {}
     key = msg[0]
     for i in range(8):
         if key & (1<<(7-i)) != 0:
@@ -165,7 +166,8 @@ def process_msg(pkt, msg, loop):
                     data = int_data >> (num_bytes*8-start_bit%8-signal.len)
                     data = data&mask
                     #print(signal.name, byte_data, int_data, (num_bytes*8-start_bit%8-1), mask, data)
-                signal.set_value(data, loop)
+                signal.set_value(data)
+                packet_signals[signal.name] = signal.value
     key = msg[1]
     for i in range(8,16):
         if key & (1<<(15-i)) != 0:
@@ -190,7 +192,11 @@ def process_msg(pkt, msg, loop):
                     data = int_data >> (num_bytes*8-start_bit%8-signal.len)
                     data = data&mask
                     #print(signal.name, byte_data, int_data, (num_bytes*8-start_bit%8-1), mask, data)
-                signal.set_value(data, loop)
+                signal.set_value(data)
+                packet_signals[signal.name] = signal.value
+    
+    asyncio.run_coroutine_threadsafe(send_to_clients(json.dumps(packet_signals)), loop)
+
 
 pkt = None
 msg = None
@@ -239,7 +245,3 @@ async def main(args):
     await asyncio.Future()
 
 asyncio.run(main(sys.argv[1:]))
-
-
-
-        
