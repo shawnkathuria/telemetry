@@ -1,14 +1,14 @@
 import cantools
 import pandas as pd
-import sys
 import serial
 import json
 import asyncio
 import websockets
 import asyncio
-import random
 import threading
 import argparse
+import random
+import time
 
 
 CONNECTIONS = set()
@@ -74,11 +74,7 @@ class Signal:
         return self.value
     
     def set_value(self, data):
-        #print("set")
-        #value = int.from_bytes(data, "big")
         self.value = self.offset + self.scale*data
-        #data_final = {"name":self.name,"value":self.value}
-        #asyncio.run_coroutine_threadsafe(send_to_clients(json.dumps(data_final)), loop)
 
     
 pkts = []
@@ -203,14 +199,10 @@ def serial_reader(ser, loop):
             #print(signals['LV_Vehicle_State'].value)
     
 
-async def main(csv, db, port, baud, mock):
-    if mock:
-        # make randomized data for pkts[]
-        pass
-    else:
-        error_code = parse_csv_and_db(csv, db)
-        if error_code != 0:
-            return
+async def main(csv, db, port, baud):
+    error_code = parse_csv_and_db(csv, db)
+    if error_code != 0:
+        return
     
     server = await websockets.serve(echo_handler, "localhost", 4040)
     #to read pkts, read first byte, determine which pkt, read the rest
@@ -226,15 +218,34 @@ async def main(csv, db, port, baud, mock):
     await asyncio.Future()
 
 async def mock():
-    pass
+    packet_signals = {}
+    t = 0
+    while t < 60: # run mock mode for 60 seconds
+        # randomly generates floats for these data values based on realistic ranges
+        packet_signals["temp"] = random.uniform(20, 80)
+        packet_signals["volts"] = random.uniform(300, 450)
+        packet_signals["currents"] = random.uniform(0, 50)
+        packet_signals["wheel_speeds"] = random.uniform(0, 120)
+        packet_signals["throttle_break"] = random.uniform(0, 100)
+
+        asyncio.run_coroutine_threadsafe(send_to_clients(json.dumps(packet_signals)), asyncio.get_running_loop())
+        
+        time.sleep(0.1)  # perform this action every 0.1 sec
+        t += 0.1
+    await asyncio.Future()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--csv", type = str, required=True, help = "path to csv")
-parser.add_argument("--db", type = str, required=True, help = "path to database")
+parser.add_argument("--mock", type = bool, default = False, help = "whether to use real data - False by default")
+parser.add_argument("--csv", type = str, default = None, help = "path to csv (required if --mock is False)")
+parser.add_argument("--db", type = str, default = None, help = "path to database (required if --mock is False)")
 parser.add_argument("--port", type = str, default = "COM6", help = "serial port - COM6 by default")
-parser.add_argument("--mock", type = bool, default = False, help = "default is False (uses real data)")
 parser.add_argument("--baud", type = int, default = 115200, help = "baudrate - 115200 by default")
 
 args = parser.parse_args()
 
-asyncio.run(main(args.csv, args.db, args.port, args.baud, args.mock))
+if args.mock:
+    asyncio.run(mock())
+elif args.csv is None or args.db is None:
+    parser.error('--csv and --db are required when --mock is False')
+else:
+    asyncio.run(main(args.csv, args.db, args.port, args.baud))
