@@ -42,6 +42,13 @@ if __name__ == "__main__":
     msg = None
 
     if args.mock:
+        for i in ["temp (C)", "volts (V)", "currents (A)", "wheel speeds (km/hr)", "throttle pos (%)"]:
+            name = signal.name
+            endian = 'little'
+            if signal.byte_order == 'big_endian':
+                endian = 'big'
+            s = Signal(sig_count, signal.offset, signal.scale, signal.start, signal.length, signal.unit, name, signal.is_signed, endian)
+            signals[s] = 0
         asyncio.run(mock_mode.run_mock(signals))
     elif args.csv is None or args.db is None:
         parser.error('--csv and --db are required when --mock is False')
