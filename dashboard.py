@@ -9,6 +9,7 @@ import threading
 import argparse
 import random
 import time
+import math
 
 
 CONNECTIONS = set()
@@ -217,6 +218,8 @@ async def main(csv, db, port, baud):
     threading.Thread(target=serial_reader, args=(ser,asyncio.get_running_loop()), daemon=True).start()
     await asyncio.Future()
 
+# old mock() function that sent randomized data through packets
+"""
 async def mock():
     packet_signals = {}
     t = 0
@@ -233,6 +236,19 @@ async def mock():
         time.sleep(0.1)  # perform this action every 0.1 sec
         t += 0.1
     await asyncio.Future()
+"""
+
+async def run_mock(loop_hz = 10):
+    period = 12.0
+    dt = 1.0 / max(loop_hz,1)
+    t0 = asyncio.get_running_loop().time()
+    target = "INV_Module_C_Temp" if "INV_Module_C_Temp" in signals else next(iter(signals.keys()))
+    print(f"[mock] driving signal: {target}")
+    while True:
+        t = asyncio.get_running_loop().time() - t0
+        raw = 35 + 8*math.sin(2*math.pi*t/period) + random.uniform(-.03, 0.3)
+        signals[target].set_value(raw,asyncio.get_running_loop())
+        await asyncio.sleep(dt)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--mock", type = bool, default = False, help = "whether to use real data - False by default")
@@ -244,7 +260,7 @@ parser.add_argument("--baud", type = int, default = 115200, help = "baudrate - 1
 args = parser.parse_args()
 
 if args.mock:
-    asyncio.run(mock())
+    asyncio.run(run_mock())
 elif args.csv is None or args.db is None:
     parser.error('--csv and --db are required when --mock is False')
 else:
