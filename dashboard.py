@@ -6,6 +6,7 @@ import mock_mode
 import serial_reader
 import csv_db_parser
 import websocket_server
+import classes
 
 async def main(csv, db, port, baud):
     error_code = csv_db_parser.parse_csv_and_db(csv, db, pkts, signals)
@@ -42,12 +43,11 @@ if __name__ == "__main__":
     msg = None
 
     if args.mock:
-        for i in ["temp (C)", "volts (V)", "currents (A)", "wheel speeds (km/hr)", "throttle pos (%)"]:
-            name = signal.name
-            endian = 'little'
-            if signal.byte_order == 'big_endian':
-                endian = 'big'
-            s = Signal(sig_count, signal.offset, signal.scale, signal.start, signal.length, signal.unit, name, signal.is_signed, endian)
+        sig_count = 0
+        mock_signals = {"temp (C)": "deg C", "volts (V)": "V", "currents (A)": "A", "wheel speeds (km/hr)": "km/hr", "throttle pos (%)": "%"}
+        for sig_name, sig_unit in mock_signals.items():
+            s = classes.Signal(arr_idx=sig_count, offset=0, scale=0, start=0, length=0, unit=sig_unit, name=sig_name, is_signed=0, endian=0)
+            sig_count += 1
             signals[s] = 0
         asyncio.run(mock_mode.run_mock(signals))
     elif args.csv is None or args.db is None:
