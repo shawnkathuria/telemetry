@@ -3,6 +3,7 @@ import asyncio
 import threading
 import argparse
 import mock_mode
+import stress_mock_mode
 import serial_reader
 import csv_db_parser
 import websocket_server
@@ -29,6 +30,7 @@ async def main(csv, db, port, baud):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mock", type = bool, default = False, help = "whether to use real data - False by default")
+    parser.add_argument("--stressMock", type = bool, default = False, help = "whether to run mock mode for stress testing - False by default")
     parser.add_argument("--csv", type = str, default = None, help = "path to csv (required if --mock is False)")
     parser.add_argument("--db", type = str, default = None, help = "path to database (required if --mock is False)")
     parser.add_argument("--port", type = str, default = "COM6", help = "serial port - COM6 by default")
@@ -42,14 +44,17 @@ if __name__ == "__main__":
     pkt = None
     msg = None
 
-    if args.mock:
+    if args.mock or args.stressMock:
         sig_count = 0
         mock_signals = {"temp (C)": "deg C", "volts (V)": "V", "currents (A)": "A", "wheel speeds (km/hr)": "km/hr", "throttle pos (%)": "%"}
         for sig_name, sig_unit in mock_signals.items():
             s = classes.Signal(arr_idx=sig_count, offset=0, scale=0, start=0, length=0, unit=sig_unit, name=sig_name, is_signed=0, endian=0)
             sig_count += 1
             signals[s] = 0
-        asyncio.run(mock_mode.run_mock(signals))
+        if args.mock:
+            asyncio.run(mock_mode.run_mock(signals))
+        else:
+            asyncio.run(stress_mock_mode.run_mock(signals))
     elif args.csv is None or args.db is None:
         parser.error('--csv and --db are required when --mock is False')
     else:
