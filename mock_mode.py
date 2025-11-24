@@ -11,6 +11,7 @@ async def run_mock(signals, loop_hz = 10):
         raw = 35 + 8*math.sin(2*math.pi*t/period) + random.uniform(-0.3, 0.3)
 
         for target in list(signals.keys()):
-            signals[target].set_value(raw,asyncio.get_running_loop())
+            signals[target].set_value(raw)
 
         await asyncio.sleep(dt)
+
