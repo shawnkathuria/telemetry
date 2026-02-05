@@ -58,7 +58,50 @@ if __name__ == "__main__":
 
     if args.mock or args.stressMock:
         sig_count = 0
-        mock_signals = {"temp (C)": "deg C", "volts (V)": "V", "currents (A)": "A", "wheel speeds (km/hr)": "km/hr", "throttle pos (%)": "%"}
+        mock_signals = {
+        # --- charts ---
+        "SEN_WSS_FL": "km/h",
+        "SEN_WSS_FR": "km/h",
+        "SEN_WSS_RL": "km/h",
+        "SEN_WSS_RR": "km/h",
+        "LV_BPT_Front": "raw",
+        "LV_BPT_Rear": "raw",
+        "SEN_Damper_Pos_FL": "mm",
+        "SEN_Damper_Pos_FR": "mm",
+        "SEN_Damper_Pos_RL": "mm",
+        "SEN_Damper_Pos_RR": "mm",
+        "INV_Motor_Speed": "rpm",
+        "SEN_G_FORCE_X": "g",
+        "SEN_G_FORCE_Y": "g",
+        "SEN_G_FORCE_Z": "g",
+        "INV_Commanded_Torque": "Nm",
+        "INV_Torque_Feedback": "Nm",
+        "VCU_INV_Torque_Command": "Nm",
+
+        # --- tables ---
+        "LV_Vehicle_State": "",     # string-ish in real life; for mock you can send a number or short text
+        "BeaconCount": "count",
+        "LV_FILTERED_V": "V",
+        "BMS_T_A1": "C",
+        "BMS_T_B1": "C",
+        "BMS_T_C1": "C",
+        "BMS_T_D1": "C",
+        "BMS_T_E1": "C",
+        "BMS_T_F1": "C",
+
+        "BMS_V_A1": "V",
+        "BMS_V_B1": "V",
+        "BMS_V_C1": "V",
+        "BMS_V_D1": "V",
+        "BMS_V_E1": "V",
+        "BMS_V_F1": "V",
+
+        "SEN_TT_FL_8": "C",
+        "SEN_TT_FR_8": "C",
+        "SEN_TT_RL_8": "C",
+        "SEN_TT_FR_8": "C"
+      }
+
         for sig_name, sig_unit in mock_signals.items():
             s = classes.Signal(arr_idx=sig_count, offset=0, scale=0, start_idx=0, len=0, unit=sig_unit, name=sig_name, signed=0, endian=0)
             sig_count += 1

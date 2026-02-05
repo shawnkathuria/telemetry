@@ -1,7 +1,12 @@
 // Connect to the Python mock server directly on 127.0.0.1:4040
-const PYTHON_WS_HOST = '127.0.0.1';
-const PYTHON_WS_PORT = 4040;
-const socket = new WebSocket(`ws://${PYTHON_WS_HOST}:${PYTHON_WS_PORT}`);
+// const PYTHON_WS_HOST = '0.0.0.0';
+// const PYTHON_WS_PORT = 4040;
+// const socket = new WebSocket(`ws://${PYTHON_WS_HOST}:${PYTHON_WS_PORT}`);
+const wsProto = (window.location.protocol === "https:") ? "wss" : "ws";
+const wsHost = window.location.hostname;   // hostname WITHOUT port
+const wsPort = 4040;
+const socket = new WebSocket(`${wsProto}://${wsHost}:${wsPort}`);
+
 
 /**
  * Key: is a {string}, datapoint name (e.g., "temperature", "humidity", "pressure")
@@ -96,35 +101,69 @@ setInterval(() => {
 
 // --- WebSocket event handling ---
 socket.onopen = () => {
-    console.log(`Connected to Python WebSocket server at ws://${PYTHON_WS_HOST}:${PYTHON_WS_PORT}`);
+    // console.log(`Connected to Python WebSocket server at ws://${PYTHON_WS_HOST}:${PYTHON_WS_PORT}`);
 };
+
+// socket.onmessage = (msg) => {
+//     const dataObject = JSON.parse(msg.data);
+//     const now = new Date();
+
+//     // Fault handling
+//     if ((dataObject.value === 1 && dataObject.name.startsWith("LV_Fault_")) ||
+//         (dataObject.name === "INV_DC_Bus_Current" && dataObject.value > 350) ||
+//         (dataObject.name === "INV_DC_Bus_Voltage" && dataObject.value > 303)) {
+//         triggerFault(dataObject.name);
+//         return;
+//     } else if (dataObject.name === "LV_FILTERED_V" || dataObject.name === "BeaconCount" || 
+//                dataObject.name.startsWith("BMS") || dataObject.name.startsWith("SEN_TT") || 
+//                dataObject.name === "LV_Vehicle_State") {
+//         updateTable(dataObject.name, dataObject.value);
+//         return;
+//     }
+
+//     // Adjust BPT sensors
+//     if (dataObject.name === "LV_BPT_Front") {
+//         dataObject.value = ((dataObject.value / 4095 * 3.3 * 4 + 0.05) - 0.5) * 25;
+//     } else if (dataObject.name === "LV_BPT_Rear") {
+//         dataObject.value = ((dataObject.value / 4095 * 3.3 * 4 + 0.043) - 0.5) * 25;
+//     }
+
+//     dataBuffer.push({ name: dataObject.name, value: dataObject.value, time: now });
+// };
 
 socket.onmessage = (msg) => {
-    const dataObject = JSON.parse(msg.data);
+    const payload = JSON.parse(msg.data);
+    // console.log("ws payload keys:", Object.keys(payload).slice(0, 5));
     const now = new Date();
 
-    // Fault handling
-    if ((dataObject.value === 1 && dataObject.name.startsWith("LV_Fault_")) ||
-        (dataObject.name === "INV_DC_Bus_Current" && dataObject.value > 350) ||
-        (dataObject.name === "INV_DC_Bus_Voltage" && dataObject.value > 303)) {
-        triggerFault(dataObject.name);
-        return;
-    } else if (dataObject.name === "LV_FILTERED_V" || dataObject.name === "BeaconCount" || 
-               dataObject.name.startsWith("BMS") || dataObject.name.startsWith("SEN_TT") || 
-               dataObject.name === "LV_Vehicle_State") {
-        updateTable(dataObject.name, dataObject.value);
-        return;
-    }
+    // payload is { signalName: value, ... }
+    for (const [name, valueRaw] of Object.entries(payload)) {
+        let value = valueRaw;
 
-    // Adjust BPT sensors
-    if (dataObject.name === "LV_BPT_Front") {
-        dataObject.value = ((dataObject.value / 4095 * 3.3 * 4 + 0.05) - 0.5) * 25;
-    } else if (dataObject.name === "LV_BPT_Rear") {
-        dataObject.value = ((dataObject.value / 4095 * 3.3 * 4 + 0.043) - 0.5) * 25;
-    }
+        // Fault handling (same logic, but per-signal)
+        if ((value === 1 && name.startsWith("LV_Fault_")) ||
+            (name === "INV_DC_Bus_Current" && value > 350) ||
+            (name === "INV_DC_Bus_Voltage" && value > 303)) {
+            triggerFault(name);
+            continue;
+        } else if (name === "LV_FILTERED_V" || name === "BeaconCount" ||
+                   name.startsWith("BMS") || name.startsWith("SEN_TT") ||
+                   name === "LV_Vehicle_State") {
+            updateTable(name, value);
+            continue;
+        }
 
-    dataBuffer.push({ name: dataObject.name, value: dataObject.value, time: now });
+        // Adjust BPT sensors
+        if (name === "LV_BPT_Front") {
+            value = ((value / 4095 * 3.3 * 4 + 0.05) - 0.5) * 25;
+        } else if (name === "LV_BPT_Rear") {
+            value = ((value / 4095 * 3.3 * 4 + 0.043) - 0.5) * 25;
+        }
+
+        dataBuffer.push({ name, value, time: now });
+    }
 };
+
 
 socket.onclose = () => {
     console.warn('Disconnected from Python WebSocket server');

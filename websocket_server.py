@@ -4,7 +4,7 @@ import websockets
 import json
 from functools import partial
 
-async def handler(websocket, path, CONNECTIONS):
+async def handler(websocket, CONNECTIONS):
     CONNECTIONS.add(websocket)
     print(f"[WS] Client connected ({len(CONNECTIONS)} total)")
     try:
@@ -13,11 +13,7 @@ async def handler(websocket, path, CONNECTIONS):
         CONNECTIONS.remove(websocket)
         print(f"[WS] Client disconnected ({len(CONNECTIONS)} total)")
 
-async def serve(CONNECTIONS, signals, host="127.0.0.1", port=4040):
-    """
-    Start WebSocket server and broadcast signals continuously.
-    """
-    # Use functools.partial to pass CONNECTIONS to handler without breaking signature
+async def serve(CONNECTIONS, signals, host="0.0.0.0", port=4040):
     bound_handler = partial(handler, CONNECTIONS=CONNECTIONS)
     server = await websockets.serve(bound_handler, host, port)
 
@@ -26,7 +22,7 @@ async def serve(CONNECTIONS, signals, host="127.0.0.1", port=4040):
             if CONNECTIONS and signals:
                 payload = {name: sig.value for name, sig in signals.items()}
                 dead = set()
-                for ws in CONNECTIONS:
+                for ws in list(CONNECTIONS):
                     try:
                         await ws.send(json.dumps(payload))
                     except:
@@ -37,3 +33,44 @@ async def serve(CONNECTIONS, signals, host="127.0.0.1", port=4040):
     asyncio.create_task(broadcast_loop())
     print(f"[WS] WebSocket server started on ws://{host}:{port}")
     return server
+
+
+# # websocket_server.py
+# import asyncio
+# import websockets
+# import json
+# from functools import partial
+
+# async def handler(websocket, path, CONNECTIONS):
+#     CONNECTIONS.add(websocket)
+#     print(f"[WS] Client connected ({len(CONNECTIONS)} total)")
+#     try:
+#         await websocket.wait_closed()
+#     finally:
+#         CONNECTIONS.remove(websocket)
+#         print(f"[WS] Client disconnected ({len(CONNECTIONS)} total)")
+
+# async def serve(CONNECTIONS, signals, host="0.0.0.0", port=4040):
+#     """
+#     Start WebSocket server and broadcast signals continuously.
+#     """
+#     # Use functools.partial to pass CONNECTIONS to handler without breaking signature
+#     bound_handler = partial(handler, CONNECTIONS=CONNECTIONS)
+#     server = await websockets.serve(bound_handler, host, port)
+
+#     async def broadcast_loop():
+#         while True:
+#             if CONNECTIONS and signals:
+#                 payload = {name: sig.value for name, sig in signals.items()}
+#                 dead = set()
+#                 for ws in CONNECTIONS:
+#                     try:
+#                         await ws.send(json.dumps(payload))
+#                     except:
+#                         dead.add(ws)
+#                 CONNECTIONS.difference_update(dead)
+#             await asyncio.sleep(0.1)
+
+#     asyncio.create_task(broadcast_loop())
+#     print(f"[WS] WebSocket server started on ws://{host}:{port}")
+#     return server
