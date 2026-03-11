@@ -2,13 +2,14 @@ import asyncio
 import random
 import math
 
+
 async def run_mock(signals, loop_hz=1000):
-    
     loop = asyncio.get_running_loop()
     t0 = loop.time()
 
-    signal_names = list(signals.keys())
-    num_signals = len(signal_names)
+    # Work with actual Signal objects, not just their names
+    signal_objs = list(signals.values())
+    num_signals = len(signal_objs)
 
     print(f"[mock-stress] Heavy-load mock active ({num_signals} signals)")
 
@@ -34,26 +35,26 @@ async def run_mock(signals, loop_hz=1000):
             in_burst = True
             burst_end = now + burst_duration
             next_burst = now + burst_interval + burst_duration
-            print("[mock-stress] BURST START")
+            # print("[mock-stress] BURST START")
 
         if in_burst and now >= burst_end:
             in_burst = False
-            print("[mock-stress] BURST END")
+            # print("[mock-stress] BURST END")
 
         # --- waveform value ---
         t = now - t0
-        raw = 35 + 8*math.sin(2*math.pi*t/period) + random.uniform(-0.3, 0.3)
+        raw = 35 + 8 * math.sin(2 * math.pi * t / period) + random.uniform(-0.3, 0.3)
 
         # --- update ALL signals ---
-        for sig in signal_names:
-            sig.set_value(raw, loop)
+        for sig in signal_objs:
+            sig.set_value(raw)
 
         updates += num_signals
 
         # --- throughput print (once/sec) ---
         if now - last_report >= 1.0:
             mode = "burst" if in_burst else "steady"
-            print(f"[mock-stress] {updates} updates/sec ({mode})")
+            # print(f"[mock-stress] {updates} updates/sec ({mode})")
             updates = 0
             last_report = now
 
