@@ -3,36 +3,75 @@ import asyncio
 import threading
 import argparse
 import mock_mode
+import stress_mock_mode
 import serial_reader
 import csv_db_parser
 import websocket_server
 import classes
 
+
 async def main(csv, db, port, baud):
     error_code = csv_db_parser.parse_csv_and_db(csv, db, pkts, signals)
     if error_code != 0:
         return
-    
-    server = await websocket_server.serve(CONNECTIONS) # TODO does this change work?
-    #to read pkts, read first byte, determine which pkt, read the rest
-    #update value of all relevant signals
+
+    server = await websocket_server.serve(CONNECTIONS, signals)  # TODO does this change work?
+    # to read pkts, read first byte, determine which pkt, read the rest
+    # update value of all relevant signals
     ser = serial.Serial()
     ser.baudrate = baud
     ser.port = port
-    ser.timeout=0.5
+    ser.timeout = 0.5
     ser.open()
-    #read from the radio
+    # read from the radio
     print("serial open")
-    threading.Thread(target=serial_reader.serial_reader, args=(ser,asyncio.get_running_loop(), pkts, pkt, msg, CONNECTIONS), daemon=True).start()
+    threading.Thread(
+        target=serial_reader.serial_reader,
+        args=(ser, asyncio.get_running_loop(), pkts, pkt, msg, CONNECTIONS),
+        daemon=True,
+    ).start()
     await asyncio.Future()
+
+
+async def mock_main(signals):
+    # Start server and broadcast loop
+    server = await websocket_server.serve(CONNECTIONS, signals)
+
+    # Start generating fake data
+    asyncio.create_task(mock_mode.run_mock(signals))
+
+    print("[MOCK] WebSocket server started, generating fake data...")
+
+    # Keep program alive
+    await asyncio.Future()
+
+
+async def stress_mock_main(signals):
+    # Start server and broadcast loop (same as mock, but heavy-load generator)
+    server = await websocket_server.serve(CONNECTIONS, signals)
+
+    # Start generating heavy-load fake data
+    asyncio.create_task(stress_mock_mode.run_mock(signals))
+
+    print("[STRESS-MOCK] WebSocket server started, generating heavy-load fake data...")
+
+    # Keep program alive
+    await asyncio.Future()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mock", type = bool, default = False, help = "whether to use real data - False by default")
-    parser.add_argument("--csv", type = str, default = None, help = "path to csv (required if --mock is False)")
-    parser.add_argument("--db", type = str, default = None, help = "path to database (required if --mock is False)")
-    parser.add_argument("--port", type = str, default = "COM6", help = "serial port - COM6 by default")
-    parser.add_argument("--baud", type = int, default = 115200, help = "baudrate - 115200 by default")
+    parser.add_argument("--mock", type=bool, default=False, help="whether to use real data - False by default")
+    parser.add_argument(
+        "--stressMock",
+        type=bool,
+        default=False,
+        help="whether to run mock mode for stress testing - False by default",
+    )
+    parser.add_argument("--csv", type=str, default=None, help="path to csv (required if --mock is False)")
+    parser.add_argument("--db", type=str, default=None, help="path to database (required if --mock is False)")
+    parser.add_argument("--port", type=str, default="COM6", help="serial port - COM6 by default")
+    parser.add_argument("--baud", type=int, default=115200, help="baudrate - 115200 by default")
     args = parser.parse_args()
 
     CONNECTIONS = set()
@@ -42,15 +81,68 @@ if __name__ == "__main__":
     pkt = None
     msg = None
 
-    if args.mock:
+    if args.mock or args.stressMock:
         sig_count = 0
-        mock_signals = {"temp (C)": "deg C", "volts (V)": "V", "currents (A)": "A", "wheel speeds (km/hr)": "km/hr", "throttle pos (%)": "%"}
+        mock_signals = {
+            # --- charts ---
+            "SEN_WSS_FL": "km/h",
+            "SEN_WSS_FR": "km/h",
+            "SEN_WSS_RL": "km/h",
+            "SEN_WSS_RR": "km/h",
+            "LV_BPT_Front": "raw",
+            "LV_BPT_Rear": "raw",
+            "SEN_Damper_Pos_FL": "mm",
+            "SEN_Damper_Pos_FR": "mm",
+            "SEN_Damper_Pos_RL": "mm",
+            "SEN_Damper_Pos_RR": "mm",
+            "INV_Motor_Speed": "rpm",
+            "SEN_G_FORCE_X": "g",
+            "SEN_G_FORCE_Y": "g",
+            "SEN_G_FORCE_Z": "g",
+            "INV_Commanded_Torque": "Nm",
+            "INV_Torque_Feedback": "Nm",
+            "VCU_INV_Torque_Command": "Nm",
+            # --- tables ---
+            "LV_Vehicle_State": "",
+            "BeaconCount": "count",
+            "LV_FILTERED_V": "V",
+            "BMS_T_A1": "C",
+            "BMS_T_B1": "C",
+            "BMS_T_C1": "C",
+            "BMS_T_D1": "C",
+            "BMS_T_E1": "C",
+            "BMS_T_F1": "C",
+            "BMS_V_A1": "V",
+            "BMS_V_B1": "V",
+            "BMS_V_C1": "V",
+            "BMS_V_D1": "V",
+            "BMS_V_E1": "V",
+            "BMS_V_F1": "V",
+            "SEN_TT_FL_8": "C",
+            "SEN_TT_FR_8": "C",
+            "SEN_TT_RL_8": "C",
+            "SEN_TT_FR_8": "C",
+        }
+
         for sig_name, sig_unit in mock_signals.items():
-            s = classes.Signal(arr_idx=sig_count, offset=0, scale=0, start=0, length=0, unit=sig_unit, name=sig_name, is_signed=0, endian=0)
+            s = classes.Signal(
+                arr_idx=sig_count,
+                offset=0,
+                scale=0,
+                start_idx=0,
+                len=0,
+                unit=sig_unit,
+                name=sig_name,
+                signed=0,
+                endian=0,
+            )
             sig_count += 1
-            signals[s] = 0
-        asyncio.run(mock_mode.run_mock(signals))
+            signals[sig_name] = s
+        if args.mock:
+            asyncio.run(mock_main(signals))
+        else:
+            asyncio.run(stress_mock_main(signals))
     elif args.csv is None or args.db is None:
-        parser.error('--csv and --db are required when --mock is False')
+        parser.error("--csv and --db are required when --mock is False")
     else:
         asyncio.run(main(args.csv, args.db, args.port, args.baud))

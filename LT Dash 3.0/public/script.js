@@ -9,29 +9,39 @@ const socket = new WebSocket(`${wsProto}://${wsHost}:${wsPort}`);
 
 
 /**
- * Key: is a {string}, datapoint name (e.g., "temperature", "humidity", "pressure")
- * Value: {Object} containing:
- *    - {Chart} chart - The Chart.js instance where the datapoint is plotted.
- *    - {Object} dataset - The specific dataset object inside the chart corresponding to the datapoint.
-*/
-charts = new Map();
+ * For each tab we maintain a Map:
+ *   key: signal name
+ *   value: { chart, dataset }
+ */
+const TAB_IDS = ["tab1", "tab2", "tab3"];
+const tabCharts = {
+    tab1: new Map(),
+    tab2: new Map(),
+    tab3: new Map(),
+};
+
 Chart.defaults.font.size = 8;
 
-// Creation of graphs
-createGraph(["SEN_WSS_FL", "SEN_WSS_FR", "SEN_WSS_RL", "SEN_WSS_RR"]);
-createGraph(["LV_BPT_Front", "LV_BPT_Rear"]);
-createGraph(["SEN_Damper_Pos_FL", "SEN_Damper_Pos_FR", "SEN_Damper_Pos_RL", "SEN_Damper_Pos_RR"]);
-createGraph(["INV_Motor_Speed"]);
-createGraph(["SEN_G_FORCE_X", "SEN_G_FORCE_Y", "SEN_G_FORCE_Z"]);
-createGraph(["INV_Commanded_Torque", "INV_Torque_Feedback", "VCU_INV_Torque_Command"]);
+// Shared graph configuration (same on all tabs for now)
+const GRAPH_GROUPS = [
+    ["SEN_WSS_FL", "SEN_WSS_FR", "SEN_WSS_RL", "SEN_WSS_RR"],
+    ["LV_BPT_Front", "LV_BPT_Rear"],
+    ["SEN_Damper_Pos_FL", "SEN_Damper_Pos_FR", "SEN_Damper_Pos_RL", "SEN_Damper_Pos_RR"],
+    ["INV_Motor_Speed"],
+    ["SEN_G_FORCE_X", "SEN_G_FORCE_Y", "SEN_G_FORCE_Z"],
+    ["INV_Commanded_Torque", "INV_Torque_Feedback", "VCU_INV_Torque_Command"],
+];
 
-function createGraph(dataPoints) { 
+function createGraph(dataPoints, containerId, chartMap) { 
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
     const canvas_el = document.createElement("canvas");
-    canvas_el.id = 'chart-' + dataPoints.join('-');
+    canvas_el.id = 'chart-' + dataPoints.join('-') + '-' + containerId;
     const wrapper_el = document.createElement("div");
     wrapper_el.classList.add("graph-wrapper");
     wrapper_el.appendChild(canvas_el);
-    document.getElementById("charts").appendChild(wrapper_el);
+    container.appendChild(wrapper_el);
 
     let datasets = dataPoints.map(name => ({
         label: name,
@@ -58,9 +68,33 @@ function createGraph(dataPoints) {
     });
 
     for (let dataset of chart.data.datasets) {
-        charts.set(dataset.label, { chart: chart, dataset: dataset });
+        chartMap.set(dataset.label, { chart: chart, dataset: dataset });
     }
 }
+
+// Initialize graphs for each tab
+window.addEventListener("DOMContentLoaded", () => {
+    TAB_IDS.forEach(tabId => {
+        const containerId = `charts-${tabId}`;
+        const chartMap = tabCharts[tabId];
+        GRAPH_GROUPS.forEach(group => createGraph(group, containerId, chartMap));
+    });
+
+    // Tab switching behavior
+    const buttons = document.querySelectorAll(".tab-button");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetTab = btn.getAttribute("data-tab");
+
+            buttons.forEach(b => b.classList.toggle("active", b === btn));
+            tabContents.forEach(tc => {
+                tc.classList.toggle("active", tc.getAttribute("data-tab") === targetTab);
+            });
+        });
+    });
+});
 
 function triggerFault(fault) {
     document.getElementById("errorMessage").innerText = "Error: " + fault;
@@ -87,13 +121,18 @@ setInterval(() => {
         groupedData[name].push({ x: time, y: value });
     });
 
+    // Push updates into every tab's charts so that, for now,
+    // all tabs show the same information.
     Object.keys(groupedData).forEach(name => {
-        if (!charts.has(name)) return;
-        const chart = charts.get(name).chart;
-        const dataset = charts.get(name).dataset.data;
-        while (dataset.length + groupedData[name].length > 60) dataset.shift();
-        dataset.push(...groupedData[name]);
-        chart.update();
+        TAB_IDS.forEach(tabId => {
+            const chartMap = tabCharts[tabId];
+            if (!chartMap.has(name)) return;
+            const chart = chartMap.get(name).chart;
+            const dataset = chartMap.get(name).dataset.data;
+            while (dataset.length + groupedData[name].length > 60) dataset.shift();
+            dataset.push(...groupedData[name]);
+            chart.update();
+        });
     });
 
     dataBuffer = [];

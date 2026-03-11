@@ -46,4 +46,5 @@ class Signal:
         return self.value
     
     def set_value(self, data):
-        self.value = self.offset + self.scale*data
+        # self.value = self.offset + self.scale*data
+        self.value = data # TODO makes this so the data is actually scaled / offset appropriately
